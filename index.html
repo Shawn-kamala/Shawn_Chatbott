@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Shawn – </title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface2: #1e2330;
+    --border: #2a3040;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --accent3: #f7c04f;
+    --text: #e8ecf4;
+    --text-muted: #7a8499;
+    --user-bubble: #1a2a4a;
+    --bot-bubble: #1a2230;
+    --success: #4fdc8e;
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+  html { height:100%; }
+  body {
+    height:100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse 55% 40% at 5% 5%, rgba(79,142,247,0.055) 0%, transparent 60%),
+      radial-gradient(ellipse 45% 45% at 95% 90%, rgba(124,92,252,0.055) 0%, transparent 60%);
+    pointer-events:none; z-index:0;
+  }
+
+  /* ══ FIXED HEADER ══ */
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 62px;
+    z-index: 200;
+    background: rgba(16,19,26,0.98);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
+  }
+  .avatar {
+    width:40px; height:40px; border-radius:50%;
+    background: linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:19px; flex-shrink:0;
+    box-shadow:0 0 18px rgba(79,142,247,0.35);
+    animation:pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 18px rgba(79,142,247,0.3); }
+    50%{ box-shadow:0 0 32px rgba(79,142,247,0.55); }
+  }
+  .header-info h1 {
+    font-family:'Playfair Display',serif; font-size:1.2rem;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  }
+  .header-info p { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
+  .dot { width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;margin-right:4px;animation:blink 2s ease-in-out infinite; }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  #clock { margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text-muted); }
+
+  /* ══ FIXED BOTTOM BAR ══ */
+  #bottomBar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    background: rgba(13,15,20,0.99);
+    border-top: 1px solid var(--border);
+    padding: 8px 12px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  #chips {
+    display:flex; gap:6px;
+    overflow-x:auto; padding-bottom:7px;
+    scrollbar-width:none;
+  }
+  #chips::-webkit-scrollbar{ display:none; }
+  .chip {
+    background:var(--surface2); border:1px solid var(--border);
+    border-radius:20px; padding:4px 11px;
+    font-size:0.68rem; color:var(--text-muted);
+    cursor:pointer; white-space:nowrap;
+    transition:all .18s; flex-shrink:0;
+    font-family:'DM Sans',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .chip:hover,.chip:active{border-color:var(--accent);color:var(--accent);background:rgba(79,142,247,0.1);}
+
+  #inputRow {
+    display:flex; gap:8px; align-items:flex-end;
+  }
+
+  #userInput {
+    flex:1;
+    min-height:44px; max-height:110px;
+    background:var(--surface2);
+    border:1.5px solid var(--border);
+    border-radius:12px;
+    padding:11px 14px;
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    font-size:16px; /* 16px prevents iOS zoom-on-focus */
+    line-height:1.4;
+    resize:none; outline:none;
+    transition:border-color .2s;
+    -webkit-appearance:none;
+  }
+  #userInput::placeholder{ color:var(--text-muted); }
+  #userInput:focus{ border-color:var(--accent); }
+
+  #sendBtn {
+    width:44px; height:44px; border-radius:12px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none; color:#fff; font-size:18px;
+    cursor:pointer; flex-shrink:0;
+    transition:transform .15s, box-shadow .15s;
+    display:flex; align-items:center; justify-content:center;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #sendBtn:hover{transform:scale(1.06);box-shadow:0 4px 18px rgba(79,142,247,0.4);}
+  #sendBtn:active{transform:scale(0.94);}
+
+  /* ══ SCROLLABLE CHAT ══ */
+  #chat {
+    position:fixed;
+    top:62px;
+    left:0; right:0;
+    bottom:0; /* will be adjusted by JS */
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:18px 13px 10px;
+    display:flex;
+    flex-direction:column;
+    gap:13px;
+    z-index:1;
+  }
+  #chat::-webkit-scrollbar{width:3px;}
+  #chat::-webkit-scrollbar-track{background:transparent;}
+  #chat::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+  /* ══ MESSAGES ══ */
+  .msg {
+    display:flex; gap:8px;
+    animation:fadeUp .28s ease;
+    width:100%;
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:translateY(0);}}
+  .msg.user{ flex-direction:row-reverse; align-self:flex-end; justify-content:flex-start; }
+  .msg.bot { align-self:flex-start; }
+
+  .msg-av {
+    width:30px;height:30px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:14px;margin-top:2px;
+  }
+  .msg.bot  .msg-av{background:linear-gradient(135deg,var(--accent),var(--accent2));}
+  .msg.user .msg-av{background:var(--surface2);border:1px solid var(--border);}
+
+  .bubble {
+    padding:10px 14px; border-radius:16px;
+    font-size:0.875rem; line-height:1.65;
+    max-width:calc(100% - 44px);
+    word-break:break-word;
+  }
+  .msg.bot  .bubble{background:var(--bot-bubble);border:1px solid var(--border);border-top-left-radius:4px;}
+  .msg.user .bubble{background:var(--user-bubble);border:1px solid rgba(79,142,247,0.2);border-top-right-radius:4px;}
+  .bubble strong{color:var(--accent3);}
+  .bubble .tag{
+    display:inline-block;background:rgba(79,142,247,0.13);color:var(--accent);
+    padding:1px 8px;border-radius:20px;font-size:0.7rem;margin:2px 3px 2px 0;
+  }
+  .ts{font-size:0.6rem;color:var(--text-muted);margin-top:4px;}
+  .msg.user .ts{text-align:right;}
+
+  .typing-dots{display:flex;gap:5px;align-items:center;padding:4px 0;}
+  .typing-dots span{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    animation:bounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2){animation-delay:.2s;}
+  .typing-dots span:nth-child(3){animation-delay:.4s;}
+  @keyframes bounce{0%,80%,100%{transform:scale(0.75);opacity:.4;}40%{transform:scale(1.2);opacity:1;}}
+
+  @media(max-width:460px){
+    .bubble{font-size:0.82rem;}
+    #header{padding:0 12px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div class="avatar">🤖</div>
+  <div class="header-info">
+    <h1>Shawn</h1>
+    <p><span class="dot"></span>Online &middot;</p>
+  </div>
+  <div id="clock">--:--:--</div>
+</div>
+
+<div id="chat"></div>
+
+<div id="bottomBar">
+  <div id="chips">
+    <div class="chip" onclick="sendChip('What time is it?')">🕐 Time</div>
+    <div class="chip" onclick="sendChip('Tell me about Kenya')">🇰🇪 Kenya</div>
+    <div class="chip" onclick="sendChip('Tell me about Mombasa')">🌊 Mombasa</div>
+    <div class="chip" onclick="sendChip('World organisations')">🌍 UN &amp; NATO</div>
+    <div class="chip" onclick="sendChip('History of computers')">💻 Computers</div>
+    <div class="chip" onclick="sendChip('Wildlife animals')">🦁 Wildlife</div>
+    <div class="chip" onclick="sendChip('Physics facts')">⚛️ Physics</div>
+    <div class="chip" onclick="sendChip('Chemistry knowledge')">🧪 Chemistry</div>
+    <div class="chip" onclick="sendChip('How do I cook rice?')">🍳 Cooking</div>
+    <div class="chip" onclick="sendChip('Mathematics help')">📐 Maths</div>
+    <div class="chip" onclick="sendChip('Tell me about cars')">🚗 Cars</div>
+    <div class="chip" onclick="sendChip('Tell me a fun fact')">🔬 Fun Facts</div>
+  </div>
+  <div id="inputRow">
+    <textarea id="userInput" placeholder="Ask Shawn anything… (Enter to send)" rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#10148;</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  KNOWLEDGE BASE
+// ════════════════════════════════════════
+const KB = {
+  persons: {
+    kezziah:{ aliases:['kezziah','granny','grandma','grandmother'], greeting:()=>`Good ${tod()}, Granny! 💛 How wonderful to hear from you. How can I help you today?` },
+    michael:{ aliases:['michael','dad','father','papa','pop'],      greeting:()=>`Good ${tod()}, Dad! 👨 Great to have you here. What can I do for you today?` },
+    betty:  { aliases:['betty','mum','mummy','mom','mother','mama'],greeting:()=>`Good ${tod()}, Mum! 💕 So lovely to see you here. How can I assist you today?` },
+    wendy:  { aliases:['wendy shiaba','wendy'],                      greeting:()=>`Hello my love! 💖✨ You light up everything, Wendy. What can I do for my babygirl today?` }
+  },
+
+  datetime:{
+    patterns:[/\btime\b/i,/\bdate\b/i,/\bday\b/i,/\btoday\b/i,/what.*(time|day|date)/i,/current.*(time|date)/i,/\bclock\b/i],
+    respond(){
+      const n=new Date();
+      const D=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const M=['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const Z=[{n:'Nairobi (EAT)',o:3},{n:'London (GMT)',o:0},{n:'New York (EST)',o:-5},{n:'Dubai (GST)',o:4},{n:'Tokyo (JST)',o:9},{n:'Sydney (AEST)',o:10},{n:'LA (PST)',o:-8},{n:'Paris (CET)',o:1}];
+      const mo=-n.getTimezoneOffset()/60;
+      const tz=Z.map(z=>{const t=new Date(n.getTime()+(z.o-mo)*3600000);return`<span class="tag">${z.n}</span> ${t.toTimeString().slice(0,5)}`;}).join('<br>');
+      return `<strong>📅 ${D[n.getDay()]}, ${n.getDate()} ${M[n.getMonth()]} ${n.getFullYear()}</strong><br>🕐 Local time: <strong>${n.toLocaleTimeString()}</strong><br><br><strong>🌍 World Clocks:</strong><br>${tz}`;
+    }
+  },
+
+  math:{
+    patterns:[/\bmath/i,/\balgebra\b/i,/\bgeometry\b/i,/\btrigonometry\b/i,/\barithmetic\b/i,/\bsolve\b/i,/\bcalculate\b/i,/\bformula/i,/\bpythagorean\b/i,/\bsin\b|\bcos\b|\btan\b/i,/\bquadratic\b/i,/\bequation\b/i,/\bpercentage\b/i],
+    alg:`<strong>📐 Algebra</strong><br>• Linear: ax+b=c → x=(c−b)/a<br>• Quadratic: x=(−b±√(b²−4ac))/2a<br>• Indices: xᵃ·xᵇ=xᵃ⁺ᵇ | (xᵃ)ᵇ=xᵃᵇ<br>• FOIL: (a+b)(c+d)=ac+ad+bc+bd<br>• Difference of squares: a²−b²=(a+b)(a−b)`,
+    geo:`<strong>📐 Geometry</strong><br>• Circle: Area=πr², Circumference=2πr<br>• Triangle: Area=½×base×height<br>• Rectangle: Area=l×w, Perimeter=2(l+w)<br>• Pythagorean: a²+b²=c²<br>• Sphere: V=(4/3)πr³, SA=4πr²<br>• Cylinder: V=πr²h<br>• Angles in triangle=180°`,
+    trig:`<strong>📐 Trigonometry</strong><br>• SOH-CAH-TOA: sin=Opp/Hyp, cos=Adj/Hyp, tan=Opp/Adj<br>• sin²θ+cos²θ=1<br>• sin30°=0.5 | cos60°=0.5 | tan45°=1<br>• Sine Rule: a/sinA=b/sinB=c/sinC<br>• Cosine Rule: c²=a²+b²−2ab·cosC`,
+    arith:`<strong>📐 Arithmetic</strong><br>• BODMAS: Brackets→Orders→Divide→Multiply→Add→Subtract<br>• Fractions: a/b÷c/d=a/b×d/c<br>• x% of y=(x/100)×y<br>• Primes: 2,3,5,7,11,13,17,19,23,29,31…<br>• √4=2, √9=3, √16=4, √25=5, √100=10`,
+    respond(input){
+      try{
+        const c=input.replace(/[^0-9+\-*/().\s%^]/g,'').trim();
+        if(c&&/\d/.test(c)){
+          const r=Function('"use strict";return('+c.replace(/\^/g,'**').replace(/%/g,'/100')+')')();
+          if(typeof r==='number'&&isFinite(r)) return `🧮 <strong>${c.replace(/\*\*/g,'^')} = ${parseFloat(r.toFixed(8))}</strong>`;
+        }
+      }catch(e){}
+      const l=input.toLowerCase();
+      if(/algebra/i.test(l)) return this.alg;
+      if(/trig/i.test(l))    return this.trig;
+      if(/geom/i.test(l))    return this.geo;
+      if(/arith|bodmas/i.test(l)) return this.arith;
+      return `<strong>📐 Mathematics</strong><br><span class="tag">Algebra</span><span class="tag">Geometry</span><span class="tag">Trigonometry</span><span class="tag">Arithmetic</span><br><br>${this.alg}<br><br>${this.geo}<br><br>${this.trig}<br><br>💡 Type a sum directly: <strong>144/12</strong> or <strong>25^2+10</strong>`;
+    }
+  },
+
+  computers:{
+    patterns:[/\bcomputer\b/i,/\bhistory of (computer|tech|internet)\b/i,/\bos\b/i,/\boperating system\b/i,/\bsoftware\b/i,/\bwindows\b/i,/\blinux\b/i,/\bmacos\b/i,/\bprogramm/i,/\binternet\b/i,/\bcpu\b/i,/\bram\b/i,/\bprocessor\b/i,/\bapplication\b/i,/\bhardware\b/i,/\bbrowser\b/i,/\bandroid\b/i,/\bgigabyte\b/i,/\bbyte\b/i],
+    respond(input){
+      const l=input.toLowerCase();
+      if(/history/i.test(l)) return `<strong>💻 History of Computing</strong><br>• <strong>1822</strong> – Babbage: Difference Engine<br>• <strong>1843</strong> – Ada Lovelace: first algorithm (1st programmer)<br>• <strong>1936</strong> – Alan Turing: Turing Machine<br>• <strong>1945</strong> – ENIAC: first electronic computer (30 tonnes!)<br>• <strong>1947</strong> – Transistor invented (Bell Labs)<br>• <strong>1958</strong> – First integrated circuit (Jack Kilby)<br>• <strong>1971</strong> – Intel 4004: first commercial microprocessor<br>• <strong>1975</strong> – Microsoft founded (Gates & Allen)<br>• <strong>1976</strong> – Apple founded (Jobs, Wozniak, Wayne)<br>• <strong>1981</strong> – IBM PC + MS-DOS<br>• <strong>1984</strong> – Apple Macintosh: first popular GUI<br>• <strong>1991</strong> – World Wide Web (Tim Berners-Lee)<br>• <strong>1998</strong> – Google founded<br>• <strong>2004</strong> – Facebook launched<br>• <strong>2007</strong> – iPhone: mobile computing revolution<br>• <strong>2022+</strong> – Generative AI era (ChatGPT, Claude, Gemini)`;
+      if(/os|operating system|windows|linux|macos|android/i.test(l)) return `<strong>🖥️ Operating Systems</strong><br><br><strong>Desktop:</strong><br>• Windows 11 (Microsoft) – ~75% global desktop share<br>• macOS (Apple) – Unix-based; Apple ecosystem<br>• Ubuntu/Linux – open-source; 96% of web servers<br>• Chrome OS (Google) – browser-focused, lightweight<br><br><strong>Mobile:</strong><br>• Android (Google) – ~72% global smartphone share<br>• iOS (Apple) – iPhone-only; security-focused<br>• HarmonyOS (Huawei)<br><br><strong>Key concepts:</strong> Kernel, Shell, File System (NTFS/ext4/APFS), Process Management, Device Drivers`;
+      if(/software|application/i.test(l)) return `<strong>💿 Software Types</strong><br><br><strong>System Software:</strong> OS, drivers, antivirus, utilities<br><br><strong>Application Software:</strong><br>• Productivity: MS Office, Google Docs, LibreOffice<br>• Browsers: Chrome, Firefox, Edge, Safari, Brave<br>• Media: VLC, Spotify, Adobe Premiere, Audacity<br>• Design: Photoshop, Figma, Canva, GIMP<br>• Communication: WhatsApp, Zoom, Teams, Discord<br>• Development: VS Code, IntelliJ, Git, Docker<br>• Database: MySQL, PostgreSQL, MongoDB<br>• Cloud: AWS, Azure, Google Cloud, Firebase<br><br><strong>Languages:</strong> Python, JavaScript, TypeScript, Java, C, C++, Rust, Go, Swift, Kotlin, PHP`;
+      return `<strong>💻 Computer Science</strong><br><br><strong>Hardware:</strong><br>• CPU – executes instructions (GHz = speed)<br>• RAM – fast temporary memory (8–64 GB)<br>• SSD/HDD – permanent storage<br>• GPU – graphics & AI processing<br>• Motherboard – connects all components<br><br><strong>Networking:</strong> TCP/IP, HTTP/HTTPS, DNS, Router, Firewall, IPv4 vs IPv6, Wi-Fi 6 (802.11ax)<br><br><strong>Data units:</strong><br>8 bits=1 Byte → 1024 B=1 KB → 1024 KB=1 MB → 1024 MB=1 GB → 1024 GB=1 TB<br><br>Ask: "history of computers", "operating systems", "software types"`;
+    }
+  },
+
+  history:{
+    patterns:[/\bworld history\b/i,/\bhistory\b/i,/\bworld war\b/i,/\bancient\b/i,/\bempire\b/i,/\bcivilisation\b/i,/\bcoloni/i,/\brevolution\b/i,/\bcold war\b/i,/\bnapoleon\b/i,/\bmedieval\b/i,/\brome\b/i,/\bgreece\b/i],
+    respond:()=>`<strong>📜 World History</strong><br><br><strong>Ancient (3000 BC–500 AD):</strong><br>• 3100 BC – Unification of Egypt<br>• 776 BC – First Olympics (Greece)<br>• 509 BC – Roman Republic founded<br>• 323 BC – Death of Alexander the Great<br>• 44 BC – Julius Caesar assassinated<br>• 476 AD – Fall of Western Roman Empire<br><br><strong>Medieval & Renaissance (500–1700):</strong><br>• 610 – Prophet Muhammad; rise of Islam<br>• 1066 – Norman Conquest of England<br>• 1215 – Magna Carta signed<br>• 1347 – Black Death kills ~1/3 of Europe<br>• 1440 – Gutenberg printing press<br>• 1492 – Columbus reaches Americas<br>• 1543 – Copernicus: Earth orbits the Sun<br><br><strong>Modern (1700–Present):</strong><br>• 1776 – American Independence<br>• 1789 – French Revolution<br>• 1807 – British abolition of slave trade<br>• 1885 – Berlin Conference: Africa divided by Europeans<br>• 1914–18 – World War I (37M casualties)<br>• 1939–45 – World War II (70–85M casualties)<br>• 1945 – UN founded; atomic bombs on Japan<br>• 1963 – Kenya independence<br>• 1969 – Moon landing (Neil Armstrong)<br>• 1989 – Fall of Berlin Wall<br>• 1994 – Mandela: President of South Africa<br>• 2001 – 9/11 attacks<br>• 2020 – COVID-19 pandemic`
+  },
+
+  kenya:{
+    patterns:[/\bkenya\b/i,/\bnairobi\b/i,/\bkenyan\b/i,/\bswahili\b/i,/\bmaasai\b/i,/\bkipchoge\b/i,/\bm-pesa\b/i,/\bwangari\b/i,/\bmaasai mara\b/i],
+    respond:()=>`<strong>🇰🇪 Kenya – East Africa's Jewel</strong><br><br><strong>Quick Facts:</strong><br>• Full name: Republic of Kenya<br>• Capital: Nairobi | Population: ~57 million (2024)<br>• Area: 580,367 km² | Currency: Kenyan Shilling (KES)<br>• Languages: Swahili & English (official); 42+ ethnic languages<br>• Independence: 12 December 1963 (from Britain)<br>• President: William Ruto (since 2022)<br><br><strong>Geography:</strong><br>• Mount Kenya (5,199 m) – Africa's 2nd highest peak<br>• Great Rift Valley cuts through the country<br>• Lake Victoria – world's largest tropical lake<br>• Indian Ocean coastline (~536 km)<br>• Borders: Somalia, Ethiopia, South Sudan, Uganda, Tanzania<br><br><strong>National Parks:</strong><br>• Maasai Mara – world-famous wildebeest migration<br>• Amboseli – elephants + Mt. Kilimanjaro backdrop<br>• Tsavo – Kenya's largest park<br>• Lake Nakuru – flamingos & rhinos<br><br><strong>Economy & Innovation:</strong><br>• M-Pesa – world's #1 mobile money platform (invented Kenya 2007)<br>• "Silicon Savannah" – Africa's tech hub<br>• Top exports: Tea, Coffee, Cut flowers, Horticulture<br><br><strong>Famous Kenyans:</strong><br>• Eliud Kipchoge – marathon world record (2:00:35)<br>• Wangari Maathai – Nobel Peace Prize (first African woman)<br>• Ngugi wa Thiong'o – acclaimed novelist<br>• David Rudisha – 800m world record holder`
+  },
+
+  mombasa:{
+    patterns:[/\bmombasa\b/i,/\bfort jesus\b/i,/\bdiani\b/i,/\bswahili coast\b/i,/\bmalindi\b/i,/\bkilifi\b/i,/\bcoastal.*kenya\b/i,/\bnyali\b/i,/\blikoni\b/i],
+    respond:()=>`<strong>🌊 Mombasa – Kenya's Coastal City</strong><br><br><strong>Facts:</strong><br>• Kenya's 2nd largest city & main seaport<br>• Population: ~1.2 million (metro ~3.5 million)<br>• Located on Mombasa Island; connected by bridges, causeway & Likoni Ferry<br>• Time Zone: EAT (UTC+3) | Climate: Tropical (avg 27–32°C)<br><br><strong>History:</strong><br>• Founded ~900 AD by Swahili-Arab traders<br>• Ruled by: Arabs → Portuguese (1505–1698) → Omani Arabs → British<br>• Key Indian Ocean trade hub (spices, ivory, gold)<br><br><strong>Top Attractions:</strong><br>• 🏰 Fort Jesus (1593) – UNESCO World Heritage Site; Portuguese fort<br>• 🦛 Haller Park – hippos, giraffes, tortoises, crocs<br>• 🏖️ Diani Beach – 17 km pristine white sand; top Africa beach<br>• 🕌 Old Town – Swahili-Arab architecture, mosques, bazaars<br>• 🌊 Nyali, Bamburi & Shanzu beaches – northern resort areas<br>• 🐘 Shimba Hills – coastal forest; rare sable antelope<br>• 🦀 Wasini Island – dhow safaris, snorkelling, coral gardens<br><br><strong>Food:</strong><br>Biryani, Pilau, Mahamri, Samosa, Mkate wa Sinia, Urojo (Mombasa Mix), Kaimati<br><br><strong>Economy:</strong><br>• Port of Mombasa – handles ~30M tonnes of cargo/year<br>• SGR (Standard Gauge Railway) – Mombasa ↔ Nairobi in 4.5 hours<br>• Tourism is the dominant industry`
+  },
+
+  orgs:{
+    patterns:[/\bun\b/i,/\bnato\b/i,/\bwho\b.*(organ|health)/i,/\borganis/i,/\borganiz/i,/\bimf\b/i,/\bworld bank\b/i,/\bwto\b/i,/\bafrican union\b/i,/\bcommonwealth\b/i,/\bworld organ/i,/\bopec\b/i,/\bg7\b|\bg20\b/i,/\beac\b/i],
+    respond:()=>`<strong>🌍 Major World Organisations</strong><br><br><strong>🏛️ United Nations (UN)</strong><br>• Founded: 1945 | HQ: New York City | 193 members<br>• Security Council: USA, UK, France, Russia, China (veto powers)<br>• Agencies: UNICEF, WHO, UNESCO, UNHCR, FAO, WFP, UNDP<br><br><strong>🛡️ NATO</strong> (North Atlantic Treaty Organisation)<br>• Founded: 1949 | HQ: Brussels | 32 members<br>• Article 5: attack on one = attack on all<br><br><strong>🌐 Others:</strong><br>• <strong>World Bank</strong> – funds development in developing nations<br>• <strong>IMF</strong> – global financial stability; 190 members<br>• <strong>WTO</strong> – global trade rules; 164 members<br>• <strong>African Union (AU)</strong> – 55 members; HQ: Addis Ababa<br>• <strong>Commonwealth</strong> – 56 nations; mostly former British colonies<br>• <strong>OPEC</strong> – controls global oil supply & price<br>• <strong>G7</strong> – USA, UK, Canada, France, Germany, Italy, Japan<br>• <strong>G20</strong> – 20 major economies; ~85% of global GDP<br>• <strong>EU</strong> – 27 European states; single market; Euro currency<br>• <strong>EAC</strong> – East African Community: Kenya, Uganda, Tanzania, Rwanda, Burundi, DRC, South Sudan<br>• <strong>IGAD</strong> – Horn of Africa cooperation<br>• <strong>WHO</strong> – World Health Organisation; HQ: Geneva<br>• <strong>ICC</strong> – International Criminal Court; prosecutes war crimes<br>• <strong>Interpol</strong> – International criminal police; 195 countries`
+  },
+
+  countries:{
+    patterns:[/\bcountries\b/i,/\btimezone\b/i,/\btime zone\b/i,/\bcountry\b/i,/\bnation\b/i,/\bcontinent\b/i,/\bcapital of\b/i,/\blargest country\b/i,/\bsmallest country\b/i],
+    caps:{'france':'Paris','germany':'Berlin','japan':'Tokyo','china':'Beijing','india':'New Delhi','usa':'Washington D.C.','america':'Washington D.C.','uk':'London','united kingdom':'London','brazil':'Brasília','australia':'Canberra','canada':'Ottawa','russia':'Moscow','kenya':'Nairobi','nigeria':'Abuja','egypt':'Cairo','ethiopia':'Addis Ababa','south africa':'Pretoria/Cape Town','ghana':'Accra','tanzania':'Dodoma','uganda':'Kampala','rwanda':'Kigali','somalia':'Mogadishu','spain':'Madrid','italy':'Rome','portugal':'Lisbon','greece':'Athens','turkey':'Ankara','mexico':'Mexico City','argentina':'Buenos Aires','chile':'Santiago','saudi arabia':'Riyadh','uae':'Abu Dhabi','iran':'Tehran','pakistan':'Islamabad','indonesia':'Jakarta','new zealand':'Wellington','philippines':'Manila','thailand':'Bangkok','vietnam':'Hanoi'},
+    respond(input){
+      const l=input.toLowerCase();
+      for(const[c,cap]of Object.entries(this.caps)){
+        if(l.includes('capital of '+c)||l.includes('capital '+c)||l.includes(c+' capital')){
+          return `🏛️ The capital of <strong>${c.replace(/\b\w/g,x=>x.toUpperCase())}</strong> is <strong>${cap}</strong>.`;
+        }
+      }
+      return `<strong>🌍 World Countries & Geography</strong><br><br><strong>7 Continents:</strong><br>• Africa (54) | Asia (48) | Europe (44) | N.America (23) | S.America (12) | Oceania (14) | Antarctica<br><br><strong>Total:</strong> 195 countries (193 UN + Vatican + Palestine)<br><br><strong>Largest by area:</strong> Russia, Canada, USA, China, Brazil<br><strong>Smallest:</strong> Vatican City (0.44 km²), Monaco, San Marino<br><strong>Most populous:</strong> India (~1.44B), China (~1.41B), USA (~340M)<br><br><strong>🕐 Time Zones:</strong><br>Nairobi: UTC+3 | London: UTC+0 | New York: UTC-5 | Dubai: UTC+4 | Tokyo: UTC+9 | Sydney: UTC+10<br><br>💡 Ask: "capital of France" or any country!`;
+    }
+  },
+
+  wildlife:{
+    patterns:[/\bwildlife\b/i,/\banimal\b/i,/\bwild animal\b/i,/\bdomestic animal\b/i,/\blion\b/i,/\belephant\b/i,/\bgiraffe\b/i,/\bcheetah\b/i,/\bzebra\b/i,/\bdog\b/i,/\bcat\b/i,/\bbird\b/i,/\bpet\b/i,/\bspecies\b/i,/\bmammal\b/i,/\bendangered\b/i,/\bgorilla\b/i,/\bshark\b/i,/\bwhale\b/i],
+    respond(input){
+      const l=input.toLowerCase();
+      if(/domestic|pet|dog|cat|farm/i.test(l)) return `<strong>🐕 Domestic & Pet Animals</strong><br><br>• <strong>Dogs</strong> – 340+ breeds; descended from wolves; 10–13 yr lifespan; smell 40× stronger than humans<br>• <strong>Cats</strong> – ~600M worldwide; sleep 14–16 hrs/day; 100 vocalisations<br>• <strong>Rabbits</strong> – 70+ breeds; social; teeth never stop growing<br>• <strong>Parrot</strong> – African Grey: most intelligent bird; learns 1000+ words<br><br><strong>Farm Animals:</strong><br>• Cow – 4-chambered stomach; 200 litres milk/month<br>• Chicken – 33B on Earth; 70B eggs laid yearly<br>• Goat – provides milk, meat, cashmere; very adaptable<br>• Pig – as intelligent as dogs; ~800M worldwide`;
+      return `<strong>🦁 Wild Animals</strong><br><br><strong>Africa's Big Five:</strong><br>• 🦁 Lion – prides; male 250 kg; roar heard 8 km; IUCN Vulnerable<br>• 🐘 African Elephant – 7 tonnes; 22-month pregnancy; mourns dead<br>• 🦏 Rhino – horn=keratin; Black Rhino critically endangered (~6,000 left)<br>• 🐆 Leopard – most adaptable big cat; hauls prey up trees; nocturnal<br>• 🐃 Cape Buffalo – most dangerous African animal to humans<br><br><strong>Other Wildlife:</strong><br>• ⚡ Cheetah – 120 km/h; non-retractable claws; only 7,000 remain<br>• 🦒 Giraffe – tallest animal (6 m); heart weighs 11 kg<br>• 🦛 Hippo – 3rd largest land mammal; runs 30 km/h; very aggressive<br>• 🐊 Crocodile – 240M year old species; 3,700 PSI bite force<br>• 🦓 Zebra – unique stripes; three species; stripes deter flies<br><br><strong>Marine:</strong><br>• 🐋 Blue Whale – 30 m, 180 tonnes; largest animal ever<br>• 🦈 Great White Shark – 300 serrated teeth; detects blood 5 km away<br>• 🐬 Dolphins – 45+ species; sleep with one eye open<br><br><strong>Most Endangered:</strong> Amur Leopard, Vaquita Porpoise (~10 left), Cross River Gorilla, Sumatran Orangutan`;
+    }
+  },
+
+  physics:{
+    patterns:[/\bphysics\b/i,/\bnewton\b/i,/\bgravity\b/i,/\beinstein\b/i,/\brelativity\b/i,/\bquantum\b/i,/\belectricity\b/i,/\bforce\b/i,/\benergy\b/i,/\bwave\b/i,/\bspeed of light\b/i,/\bthermodynamics\b/i,/\bmagnet\b/i],
+    respond:()=>`<strong>⚛️ Physics</strong><br><br><strong>Newton's Laws:</strong><br>• 1st – Inertia: object stays at rest/motion unless acted upon<br>• 2nd – F=ma (Force=mass×acceleration)<br>• 3rd – Every action has equal & opposite reaction<br><br><strong>Key Equations:</strong><br>• Gravity: g≈9.81 m/s² | F=Gm₁m₂/r²<br>• Einstein: <strong>E=mc²</strong> | KE=½mv² | PE=mgh<br>• Ohm's Law: <strong>V=IR</strong> | Power: P=IV<br>• Wave: v=fλ<br>• Speed of light: 299,792,458 m/s<br><br><strong>Thermodynamics:</strong><br>• 1st Law – Energy conservation<br>• 2nd Law – Entropy always increases<br>• Absolute zero: −273.15°C (0 Kelvin)<br><br><strong>Modern Physics:</strong><br>• Quantum Mechanics – wave-particle duality; uncertainty principle<br>• Special Relativity – time slows at high speeds<br>• General Relativity – gravity warps space-time; predicts black holes<br>• Dark Matter – 27% of universe; Dark Energy – 68% of universe<br><br><strong>Famous Physicists:</strong> Newton, Einstein, Curie, Bohr, Hawking, Faraday, Tesla, Feynman, Heisenberg`
+  },
+
+  chemistry:{
+    patterns:[/\bchemistry\b/i,/\bchemical\b/i,/\belement\b/i,/\bperiodic table\b/i,/\batom\b/i,/\bmolecule\b/i,/\breaction\b/i,/\bacid\b/i,/\bbase\b/i,/\bph\b/i,/\bvalence\b/i,/\belectron\b/i,/\bproton\b/i,/\bneutron\b/i],
+    respond:()=>`<strong>🧪 Chemistry</strong><br><br><strong>Periodic Table:</strong><br>• 118 elements (H=1 to Og=118)<br>• Metals (left) | Metalloids (middle) | Non-metals (right)<br>• Noble gases (Group 18): He, Ne, Ar, Kr, Xe, Rn – stable/inert<br><br><strong>Common Elements:</strong><br>H, He, C, O, N, Na (Sodium), Fe (Iron), Au (Gold), Ag (Silver), Cu (Copper), Ca, K (Potassium), Mg, Al, Cl<br><br><strong>Atomic Structure:</strong><br>• Nucleus: Protons(+) + Neutrons | Electrons(−) orbit in shells<br>• Atomic number = protons | Mass number = protons + neutrons<br><br><strong>Bonds:</strong><br>• Covalent – shared electrons: H₂O, CO₂, O₂<br>• Ionic – transferred electrons: NaCl (table salt)<br>• Metallic – sea of electrons in metals<br><br><strong>Acids & Bases:</strong><br>• pH 0–6: acid | pH 7: neutral | pH 8–14: base<br>• Acids: HCl, H₂SO₄, vinegar (pH~3)<br>• Bases: NaOH, baking soda (pH~9), bleach (pH~12)<br>• Neutralisation: Acid + Base → Salt + Water<br><br><strong>Reactions:</strong><br>• Combustion: CH₄+2O₂→CO₂+2H₂O<br>• Rust: 4Fe+3O₂→2Fe₂O₃<br>• Photosynthesis: 6CO₂+6H₂O+light→C₆H₁₂O₆+6O₂<br><br><strong>Famous Chemists:</strong> Marie Curie, Mendeleev, Avogadro, Lavoisier, Pauling`
+  },
+
+  cooking:{
+    patterns:[/\bcook\b/i,/\brecipe\b/i,/\bfood\b/i,/\bkitchen\b/i,/\bbake\b/i,/\bboil\b/i,/\bfry\b/i,/\brice\b/i,/\bpasta\b/i,/\bchapati\b/i,/\bugali\b/i,/\bpilau\b/i,/\bstew\b/i,/\bcuisine\b/i,/\bingredient\b/i,/\bbiryan\b/i,/\bmandazi\b/i],
+    respond(input){
+      const l=input.toLowerCase();
+      if(/rice/i.test(l)) return `<strong>🍚 Perfect Rice</strong><br><br><strong>Ingredients (4 servings):</strong> 2 cups rice, 4 cups water, 1 tsp salt<br><br>1. Rinse rice 2–3 times (clear water)<br>2. Add rice + water + salt to pot<br>3. Bring to boil on high heat<br>4. Reduce to lowest heat, cover tightly – NO peeking!<br>5. Cook 15–18 minutes<br>6. Remove from heat; rest 5 mins<br>7. Fluff with fork and serve<br><br>💡 Soak 30 mins for fluffier rice | Basmati: 1:1.5 ratio | Brown rice: 45 mins`;
+      if(/ugali/i.test(l)) return `<strong>🫕 Ugali (Kenyan Staple)</strong><br><br>1. Boil 3 cups water + 1 tsp salt<br>2. Slowly pour in maize flour, stirring constantly<br>3. Stir vigorously to break lumps<br>4. Add more flour until very thick; stir from sides<br>5. Cook on low 5–7 mins<br>6. Turn onto plate; shape into dome<br><br>Serve with: sukuma wiki, nyama choma, beef stew, omena, or beans`;
+      if(/chapati/i.test(l)) return `<strong>🫓 Kenyan Chapati</strong><br><br><strong>Ingredients:</strong> 3 cups flour, 1 cup warm water, 2 tbsp oil, 1 tsp salt, 1 tsp sugar<br><br>1. Mix flour, salt, sugar; add oil and mix<br>2. Add water gradually; knead 10 mins<br>3. Rest 30 mins covered<br>4. Divide into 8 balls; roll each thin (~2 mm)<br>5. Brush with oil; fold & roll again (creates layers!)<br>6. Cook on hot pan 2 mins each side until golden<br>7. Brush with oil while hot`;
+      if(/pilau/i.test(l)) return `<strong>🫕 Kenyan Pilau</strong><br><br><strong>Ingredients:</strong> 2 cups rice, 500g beef, onions, garlic, ginger, tomatoes, pilau masala, cloves, cardamom, cinnamon, cumin, salt, oil<br><br>1. Deep-fry onions until dark brown (key for flavour!)<br>2. Add garlic, ginger, whole spices; fry 2 mins<br>3. Add beef; brown all sides<br>4. Add pilau masala + tomatoes; cook until oil separates<br>5. Add washed rice; stir to coat<br>6. Add 4 cups hot water + salt<br>7. Cover; cook on low 25 mins<br><br>Garnish: fried onions. Serve with kachumbari salad`;
+      if(/pasta|spaghetti/i.test(l)) return `<strong>🍝 Perfect Pasta</strong><br><br>1. Boil large pot of salted water<br>2. Add pasta; stir occasionally<br>3. Cook 8–12 mins (check packet)<br>4. Taste – "al dente" = slight bite<br>5. Save 1 cup pasta water before draining<br>6. Drain; toss immediately with sauce<br><br><strong>Quick tomato sauce:</strong> Fry garlic in oil → add canned tomatoes → simmer 15 mins → season`;
+      return `<strong>🍳 Cooking Knowledge</strong><br><br><strong>Core Techniques:</strong><br>• <strong>Boiling</strong> (100°C) – pasta, eggs, vegetables<br>• <strong>Frying</strong> – shallow or deep<br>• <strong>Sautéing</strong> – high heat, little oil, keep moving<br>• <strong>Braising</strong> – brown then slow-cook in liquid<br>• <strong>Steaming</strong> – healthiest; retains most nutrients<br>• <strong>Baking</strong> – dry oven heat; bread, cakes<br><br><strong>Kenyan Dishes:</strong><br>Ugali, Nyama Choma, Pilau, Chapati, Biryani, Sukuma Wiki, Githeri, Mandazi, Samosa, Matumbo<br><br><strong>Kitchen Safety:</strong><br>• Never leave hot oil unattended<br>• Separate boards for meat & veg<br>• Chicken internal temp: 74°C | Beef: 71°C<br><br>💡 Ask: "rice recipe", "ugali", "chapati", "pilau"`;
+    }
+  },
+
+  cars:{
+    patterns:[/\bcar\b/i,/\bvehicle\b/i,/\bautomobile\b/i,/\bmotor\b/i,/\bengine\b/i,/\btyre\b|\btire\b/i,/\bsuv\b/i,/\bsedan\b/i,/\belectric car\b/i,/\btesla\b/i,/\bbmw\b/i,/\btoyota\b/i,/\bford\b/i,/\bhorsepow/i,/\bev\b/i,/\bhybrid car\b/i],
+    respond:()=>`<strong>🚗 Automobiles & Cars</strong><br><br><strong>History:</strong><br>• 1886 – Karl Benz: first gasoline car<br>• 1908 – Ford Model T: first mass-produced car<br>• 1997 – Toyota Prius: first mass-market hybrid<br>• 2008 – Tesla Roadster: first modern EV sports car<br>• 2023 – 10M+ EVs sold globally; 85M total cars produced/year<br><br><strong>Top Brands:</strong><br>🇯🇵 Toyota, Honda, Mazda, Nissan, Lexus, Subaru<br>🇩🇪 BMW, Mercedes-Benz, Audi, Volkswagen, Porsche<br>🇺🇸 Ford, GM, Tesla, Jeep, Dodge<br>🇮🇹 Ferrari, Lamborghini, Alfa Romeo, Maserati<br>🇬🇧 Land Rover, Rolls-Royce, Bentley, McLaren, Jaguar<br>🇰🇷 Hyundai, Kia | 🇫🇷 Peugeot, Renault | 🇸🇪 Volvo<br><br><strong>Car Types:</strong><br>Sedan, SUV, Hatchback, Coupe, Convertible, Pickup Truck, Minivan, Estate, Crossover, 4x4<br><br><strong>Engine/Powertrain:</strong><br>• Petrol – most common; spark ignition<br>• Diesel – better torque & economy; compression ignition<br>• Hybrid (HEV) – petrol + electric; self-charging<br>• Plug-in Hybrid (PHEV) – external charging<br>• Full Electric (BEV) – zero emissions; Tesla, Leaf, BMW i4<br>• Hydrogen Fuel Cell – Toyota Mirai; only emits water<br><br><strong>Performance:</strong><br>• Average car: 150–200 HP; 0–100 km/h ≈ 8–10 sec<br>• Bugatti Chiron Super Sport: 490 km/h top speed<br>• Tesla Model S Plaid: 0–100 in 2.1 sec<br><br><strong>Maintenance:</strong><br>• Engine oil: every 5,000–10,000 km<br>• Tyre pressure: monthly (30–35 PSI)<br>• Air filter: every 15,000–30,000 km<br>• Brakes: inspect annually`
+  },
+
+  dailylife:{
+    patterns:[/\bdaily skill\b/i,/\blife skill\b/i,/\bbudget\b/i,/\bfinance\b/i,/\bfirst aid\b/i,/\bhealthy living\b/i,/\bstudy tips?\b/i,/\bproductiv/i,/\btime management\b/i,/\bself.improv/i],
+    respond(input){
+      const l=input.toLowerCase();
+      if(/first aid/i.test(l)) return `<strong>🩺 Basic First Aid</strong><br><br>• <strong>CPR</strong>: 30 compressions : 2 breaths | 100–120/min | Push 5–6 cm deep<br>• <strong>Choking</strong>: 5 back blows → 5 abdominal thrusts (Heimlich)<br>• <strong>Burns</strong>: Cool running water 20 mins | Never ice or butter<br>• <strong>Bleeding</strong>: Firm pressure; elevate limb<br>• <strong>Fractures</strong>: Immobilise; don't realign; seek medical help<br>• <strong>Fainting</strong>: Lay flat; elevate legs; keep airway clear<br>• <strong>Stroke (FAST)</strong>: Face drooping, Arm weakness, Speech slurred, Time = call emergency<br><br>🇰🇪 Kenya Emergency: Police 999 | Ambulance 0800 720 999`;
+      if(/budget|finance|money/i.test(l)) return `<strong>💰 Personal Finance</strong><br><br><strong>50/30/20 Rule:</strong><br>• 50% Needs (rent, food, transport)<br>• 30% Wants (entertainment, dining)<br>• 20% Savings & debt repayment<br><br><strong>Tips:</strong><br>• Pay yourself first – save before spending<br>• Emergency fund: 3–6 months of expenses<br>• Avoid high-interest debt<br>• Compound interest: Ksh 5,000/month at 10% = Ksh 1M in ~9 years<br>• Use M-Shwari / KCB M-Pesa lock savings<br>• Track every expense for 30 days`;
+      return `<strong>🌟 Daily Life Skills</strong><br><br><strong>⏰ Time Management:</strong><br>• Top 3 priorities every morning<br>• "Eat the frog" – hardest task first<br>• Pomodoro: 25 min focus + 5 min break<br><br><strong>💪 Health:</strong><br>• Sleep 7–9 hours | Drink 2+ litres water daily<br>• Exercise 150 min/week | Eat vegetables & proteins<br><br><strong>🏠 Home:</strong><br>• Laundry: sort colours; cold for delicates<br>• Change bedsheets every 1–2 weeks<br>• Clean bathroom weekly; fridge monthly<br><br><strong>📚 Study:</strong><br>• Active recall > re-reading<br>• Spaced repetition: 1 day → 1 week → 1 month<br>• Teach it to someone else to really learn it`;
+    }
+  },
+
+  science:{
+    patterns:[/\bscience fact\b/i,/\bfun fact\b/i,/\bscientific fact\b/i,/\bdid you know\b/i,/\bamazing fact\b/i,/\btell me a fact\b/i,/\binteresting fact\b/i,/\bworld fact\b/i,/\bfact\b/i],
+    facts:[
+      "🌍 Earth is 4.54 billion years old and orbits the Sun at 107,000 km/h.",
+      "🧬 Human DNA is 99.9% identical to every other human. We share 60% DNA with bananas.",
+      "⭐ The Sun contains 99.86% of all the mass in our solar system.",
+      "🧠 The human brain has ~86 billion neurons, each with up to 10,000 connections.",
+      "💧 Only 2.5% of Earth's water is fresh; less than 1% is easily accessible.",
+      "🌊 The ocean covers 71% of Earth's surface but 80% remains unexplored.",
+      "🦠 Your body has more bacterial cells than human cells (38 trillion vs 30 trillion).",
+      "⚡ Lightning is 5× hotter than the Sun's surface — about 30,000°C.",
+      "🌙 The Moon is moving away from Earth at 3.8 cm per year.",
+      "🐋 A blue whale's heart is the size of a small car; beats 5–6 times per minute.",
+      "🦈 Sharks are older than trees — sharks: 450M years, trees: 350M years.",
+      "🔬 More atoms in one grain of sand than grains of sand on all Earth's beaches.",
+      "💡 Light travels 9.461 trillion km in one year (one light-year).",
+      "🌡️ Hottest Earth temperature: 56.7°C — Death Valley, USA (1913).",
+      "🪐 A day on Venus is longer than a year on Venus.",
+      "🍯 Honey never spoils — 3,000-year-old honey in Egyptian tombs was still edible.",
+      "🐘 Elephants are the only animals that cannot jump.",
+      "🦋 A group of flamingos is called a 'flamboyance'. A group of crows: a 'murder'.",
+      "🐙 Octopuses have 3 hearts, blue blood, and 9 brains (1 central + 1 per arm).",
+      "🌺 Cleopatra lived closer to the Moon landing than to the building of the Great Pyramid.",
+      "🧊 Hot water can freeze faster than cold water — the Mpemba Effect.",
+      "🦁 A lion's roar can be heard up to 8 kilometres away.",
+      "🦐 The mantis shrimp punches with bullet-force and sees 16 colour types (we see 3).",
+      "🫀 The human heart beats ~100,000 times per day — 2.5 billion in a lifetime.",
+      "♟️ More chess game possibilities exist than atoms in the observable universe."
+    ],
+    respond(){
+      return `<strong>🔬 Amazing Facts</strong><br><br>`+
+        [...this.facts].sort(()=>Math.random()-0.5).slice(0,5).map((f,i)=>`${i+1}. ${f}`).join('<br><br>');
+    }
+  },
+
+  greetings:{
+    patterns:[/^(hello|hi+|hey|good\s*(morning|afternoon|evening)|howdy|hiya|whats\s*up|greetings|yo\b)/i],
+    respond:()=>`Hello! 👋 I'm <strong>Shawn</strong>, your intelligent companion.<br><br>I can help with:<br><span class="tag">📅 Date & Time</span><span class="tag">📐 Maths</span><span class="tag">💻 Computers</span><span class="tag">📜 World History</span><br><span class="tag">🇰🇪 Kenya</span><span class="tag">🌊 Mombasa</span><span class="tag">🌍 World Orgs</span><span class="tag">🦁 Wildlife</span><br><span class="tag">⚛️ Physics</span><span class="tag">🧪 Chemistry</span><span class="tag">🍳 Cooking</span><span class="tag">🚗 Cars</span><br><span class="tag">💰 Daily Skills</span><span class="tag">🔬 Science Facts</span><span class="tag">🌐 Countries</span><br><br>What would you like to explore?`
+  }
+};
+
+// ════════════════════════════════════════
+//  UTILITIES
+// ════════════════════════════════════════
+function tod(){ const h=new Date().getHours(); return h<12?'morning':h<17?'afternoon':'evening'; }
+function ts(){ return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }
+function updateClock(){ document.getElementById('clock').textContent=new Date().toLocaleTimeString(); }
+setInterval(updateClock,1000); updateClock();
+
+// ════════════════════════════════════════
+//  RESPONSE ENGINE
+// ════════════════════════════════════════
+function getResponse(input){
+  const lower=input.toLowerCase().trim();
+
+  // Person detection
+  for(const[key,p]of Object.entries(KB.persons)){
+    for(const alias of p.aliases){
+      if(lower.includes(alias)){
+        if(key==='wendy') return p.greeting();
+        if(/\b(i am|i'?m|this is|it'?s|hello|hi|hey|good|morning|afternoon|evening)\b/i.test(lower)||lower.trim()===alias)
+          return p.greeting();
+      }
+    }
+  }
+
+  // Direct maths expression
+  if(/^[\d\s+\-*\/^().%]+$/.test(lower)) return KB.math.respond(input);
+
+  // Pattern routing
+  if(KB.datetime.patterns.some(p=>p.test(lower)))    return KB.datetime.respond();
+  if(KB.math.patterns.some(p=>p.test(lower)))        return KB.math.respond(input);
+  if(/history of computer/i.test(lower))             return KB.computers.respond('history of computers');
+  if(KB.computers.patterns.some(p=>p.test(lower)))   return KB.computers.respond(input);
+  if(/mombasa/i.test(lower))                         return KB.mombasa.respond();
+  if(KB.kenya.patterns.some(p=>p.test(lower)))       return KB.kenya.respond();
+  if(KB.orgs.patterns.some(p=>p.test(lower)))        return KB.orgs.respond();
+  if(KB.countries.patterns.some(p=>p.test(lower)))   return KB.countries.respond(input);
+  if(KB.wildlife.patterns.some(p=>p.test(lower)))    return KB.wildlife.respond(input);
+  if(KB.physics.patterns.some(p=>p.test(lower)))     return KB.physics.respond();
+  if(KB.chemistry.patterns.some(p=>p.test(lower)))   return KB.chemistry.respond();
+  if(KB.history.patterns.some(p=>p.test(lower)))     return KB.history.respond();
+  if(KB.cooking.patterns.some(p=>p.test(lower)))     return KB.cooking.respond(input);
+  if(KB.cars.patterns.some(p=>p.test(lower)))        return KB.cars.respond();
+  if(KB.dailylife.patterns.some(p=>p.test(lower)))   return KB.dailylife.respond(input);
+  if(KB.science.patterns.some(p=>p.test(lower)))     return KB.science.respond();
+  if(KB.greetings.patterns.some(p=>p.test(lower)))   return KB.greetings.respond();
+
+  if(/\bhelp\b/i.test(lower))                        return KB.greetings.respond();
+  if(/\bthank/i.test(lower))                         return `You're very welcome! 😊 Feel free to ask anything else anytime.`;
+  if(/\b(bye|goodbye|cya|see you|farewell)\b/i.test(lower)) return `Goodbye! 👋 Have a wonderful ${tod()}. Come back anytime!`;
+
+  return `Hmm, I'm not sure about that one. 🤔<br><br>Try asking about: <span class="tag">Kenya</span><span class="tag">Mombasa</span><span class="tag">Maths</span><span class="tag">History</span><span class="tag">Physics</span><span class="tag">Cooking</span><span class="tag">Cars</span><span class="tag">Wildlife</span><span class="tag">Fun Facts</span><br><br>Or say <strong>hi</strong> to see everything I can do!`;
+}
+
+// ════════════════════════════════════════
+//  UI
+// ════════════════════════════════════════
+function addMsg(html, isUser){
+  const chat=document.getElementById('chat');
+  const w=document.createElement('div'); w.className=`msg ${isUser?'user':'bot'}`;
+  const av=document.createElement('div'); av.className='msg-av'; av.textContent=isUser?'👤':'🤖';
+  const b=document.createElement('div'); b.className='bubble';
+  if(isUser) b.textContent=html; else b.innerHTML=html;
+  const t=document.createElement('div'); t.className='ts'; t.textContent=ts();
+  b.appendChild(t);
+  if(isUser){w.appendChild(b);w.appendChild(av);}else{w.appendChild(av);w.appendChild(b);}
+  chat.appendChild(w);
+  chat.scrollTop=chat.scrollHeight;
+}
+function showTyping(){
+  const chat=document.getElementById('chat');
+  const w=document.createElement('div'); w.className='msg bot'; w.id='typing';
+  const av=document.createElement('div'); av.className='msg-av'; av.textContent='🤖';
+  const b=document.createElement('div'); b.className='bubble';
+  b.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
+  w.appendChild(av); w.appendChild(b); chat.appendChild(w);
+  chat.scrollTop=chat.scrollHeight;
+}
+function removeTyping(){ const e=document.getElementById('typing'); if(e)e.remove(); }
+
+function sendMessage(){
+  const inp=document.getElementById('userInput');
+  const text=inp.value.trim(); if(!text)return;
+  addMsg(text,true);
+  inp.value=''; inp.style.height='auto';
+  showTyping();
+  setTimeout(()=>{ removeTyping(); addMsg(getResponse(text),false); },600+Math.random()*700);
+}
+function sendChip(t){ document.getElementById('userInput').value=t; sendMessage(); }
+
+// Auto-resize textarea
+const inp=document.getElementById('userInput');
+inp.addEventListener('input',function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,110)+'px'; adjustChat(); });
+inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} });
+
+// KEY FIX: adjust chat bottom to match bottomBar height
+function adjustChat(){
+  const bb=document.getElementById('bottomBar');
+  const chat=document.getElementById('chat');
+  chat.style.bottom=bb.offsetHeight+'px';
+}
+// Run on load and whenever anything changes
+window.addEventListener('load',adjustChat);
+window.addEventListener('resize',adjustChat);
+new ResizeObserver(adjustChat).observe(document.getElementById('bottomBar'));
+
+// Welcome message
+setTimeout(()=>{
+  adjustChat();
+  addMsg(`Good ${tod()}! 👋 I'm <strong>Shawn</strong>, How can i help you today`,false);
+},300);
+</script>
+</body>
+</html>
